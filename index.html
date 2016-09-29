@@ -1,13 +1,44 @@
 <html>
   <body>
-    <p id='server-time'></p>
+    <div class="inputAnswer" style="margin-top: 50px; text-align: center;">
+      <p id='connection-time' style="font-size: 16px; text-align: center;"></p>
+      <h1 for="userInput">Please submit your final answer</h1>
+      <input id='userInput' style="display: block; font-size: 24px; margin: 10px auto; border: 1px solid black;">
+    </div>
+   
+    <button id="button" style="background: #4A70FF; color: white; padding: 20px 40px; border: none; border-radius: 5px; cursor: pointer; margin: 20px auto 20px; display: block; font-size: 20px;">Submit</button>
+    <p id='message' style="font-size: 24px; text-align: center;"></p>
+    <p id='client-time' style="font-size: 16px; text-align: center;"></p>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
-      var el = document.getElementById('server-time');
+      var connectionTime = document.getElementById('connection-time');
+      var timeOnClient = document.getElementById('client-time');
+      var button = document.getElementById('button');
+      var message = document.getElementById('message');
+      var userInput = document.getElementById('userInput');
+      
+      button.addEventListener('click', postDataToServer);
 
-      socket.on('time', function(timeString) {
-        el.innerHTML = 'Server time: ' + timeString;
+      function postDataToServer() {
+        var clientTime = new Date().toTimeString();
+        var userMessage = userInput.value;
+
+        //client emmits current time to the server
+        socket.emit('postingToServer', {clientTime: clientTime, userMessage: userMessage});
+      }
+
+      // when clien receives event 'connectionTime' from server, set time to HTML
+      socket.on('connectionTime', function(timeOfConnection) {
+        connectionTime.innerHTML = 'Connection with server established at: ' + timeOfConnection;
+      });
+
+      // when clien receives event 'postingToClient' from server, set time to HTML
+      socket.on('postingToClient', function(timeObject) {
+        userInput.value = '';
+        // timeOnClient.innerHTML = 'Time on client posting to server: ' + timeObject.clientTime;
+        message.innerHTML = timeObject.serverMessage;
       });
     </script>
   </body>

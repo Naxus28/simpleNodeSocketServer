@@ -1,21 +1,39 @@
 'use strict';
 
-const express = require('express');
-const socketIO = require('socket.io');
-const path = require('path');
+var express = require('express');
+var socketIO = require('socket.io');
+var path = require('path');
 
-const PORT = process.env.PORT || 3000;
-const INDEX = path.join(__dirname, 'index.html');
+var PORT = process.env.PORT || 3000;
+var INDEX = path.join(__dirname, 'index.html');
 
-const server = express()
+var server = express()
   .use((req, res) => res.sendFile(INDEX) )
   .listen(PORT, () => console.log(`Listening on ${ PORT }`));
 
-const io = socketIO(server);
+var socketServer = socketIO(server);
 
-io.on('connection', (socket) => {
+socketServer.on('connection', (socket) => {
   console.log('Client connected');
+  var connectionTime = new Date().toTimeString();
+
+  // server emmits the time of connection to client
+  socketServer.sockets.emit('connectionTime', connectionTime);
+
+  // when server receives event 'postingToServer' emitted by the client
+  socket.on('postingToServer', function (clientData) {
+    var serverTime = new Date().toTimeString();
+    var serverMessage;
+
+    if (clientData.userMessage) {
+      serverMessage = 'Here is your final answer: ' + clientData.userMessage + '<br>You completed this program at: ' + serverTime;
+    } else {
+      serverMessage = 'You didn\'t send an answer therefore your grade is automatically a 0 :( <br> You completed this program at: ' + serverTime;
+    }
+    // server emmits the time sent from client and the current time on the server
+    socketServer.sockets.emit('postingToClient', {clientTime: clientData.clientTime, serverMessage: serverMessage, serverTime: serverTime});
+  });
+
   socket.on('disconnect', () => console.log('Client disconnected'));
 });
 
-setInterval(() => io.emit('time', new Date().toTimeString()), 1000);
